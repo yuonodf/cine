@@ -30,8 +30,10 @@ RUN mkdir -p /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Run Laravel package discovery after installation
-RUN php artisan package:discover --ansi || true
+# Clear and regenerate package manifest
+RUN rm -f /var/www/html/bootstrap/cache/packages.php \
+    && composer dump-autoload --no-interaction \
+    && php artisan package:discover --ansi || true
 
 # Configure Apache
 RUN a2enmod rewrite
