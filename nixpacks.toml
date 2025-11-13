@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["php", "composer", "apacheHttpd"]
+nixPkgs = ["php74", "composer"]
 
 [phases.install]
 cmds = [
