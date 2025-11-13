@@ -22,7 +22,9 @@ WORKDIR /var/www/html
 COPY . .
 
 # Install dependencies (skip scripts to avoid artisan errors)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+# Use --no-scripts to prevent artisan from running before setup is complete
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts \
+    && composer dump-autoload --no-interaction
 
 # Create bootstrap/cache directory and set permissions
 RUN mkdir -p /var/www/html/bootstrap/cache \
@@ -47,16 +49,12 @@ RUN echo '#!/bin/bash\n\
 # Always regenerate packages.php on startup to avoid corruption issues\n\
 cd /var/www/html\n\
 rm -f bootstrap/cache/packages.php\n\
-# Ensure installed.json exists and is valid\n\
-if [ -f vendor/composer/installed.json ]; then\n\
-  # Try to fix if installed.json has wrong structure\n\
-  INSTALLED_JSON=$(cat vendor/composer/installed.json)\n\
-  if echo "$INSTALLED_JSON" | grep -q "^\[\["; then\n\
-    # If it starts with [[, it might be double-encoded, try to fix\n\
-    echo "$INSTALLED_JSON" | php -r "echo json_encode(json_decode(file_get_contents(\"php://stdin\"), true));" > vendor/composer/installed.json.tmp && mv vendor/composer/installed.json.tmp vendor/composer/installed.json || true\n\
-  fi\n\
+# Regenerate installed.json if needed\n\
+if [ ! -f vendor/composer/installed.json ] || [ ! -s vendor/composer/installed.json ]; then\n\
+  composer dump-autoload --no-interaction 2>/dev/null || true\n\
 fi\n\
-php artisan package:discover --ansi 2>/dev/null || true\n\
+# Try to discover packages, if it fails create empty packages.php\n\
+php artisan package:discover --ansi 2>/dev/null || echo "<?php return [];" > bootstrap/cache/packages.php\n\
 if [ -n "$PORT" ]; then\n\
   sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf\n\
   sed -i "s/:80>/:$PORT>/g" /etc/apache2/sites-available/*.conf\n\
