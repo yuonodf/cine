@@ -43,10 +43,9 @@ RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 
 # Create startup script to use PORT env var and fix packages.php
 RUN echo '#!/bin/bash\n\
-# Fix packages.php if it exists and is corrupted\n\
-if [ -f /var/www/html/bootstrap/cache/packages.php ]; then\n\
-  php artisan package:discover --ansi || rm -f /var/www/html/bootstrap/cache/packages.php\n\
-fi\n\
+# Always regenerate packages.php on startup to avoid corruption issues\n\
+rm -f /var/www/html/bootstrap/cache/packages.php\n\
+cd /var/www/html && php artisan package:discover --ansi 2>/dev/null || true\n\
 if [ -n "$PORT" ]; then\n\
   sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf\n\
   sed -i "s/:80>/:$PORT>/g" /etc/apache2/sites-available/*.conf\n\
