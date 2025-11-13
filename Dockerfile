@@ -51,22 +51,12 @@ RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 
 # Create startup script to use PORT env var and fix packages.php
 RUN echo '#!/bin/bash\n\
-# Always regenerate packages.php on startup to avoid corruption issues\n\
 cd /var/www/html\n\
-rm -f bootstrap/cache/packages.php\n\
-# Fix installed.json if it has wrong structure (nested arrays)\n\
-if [ -f vendor/composer/installed.json ]; then\n\
-  php -r "\n\
-    \$json = file_get_contents(\"vendor/composer/installed.json\");\n\
-    \$data = json_decode(\$json, true);\n\
-    if (is_array(\$data) && isset(\$data[0]) && is_array(\$data[0]) && isset(\$data[0][0])) {\n\
-      // If first element is array of arrays, flatten it\n\
-      \$data = \$data[0];\n\
-    }\n\
-    file_put_contents(\"vendor/composer/installed.json\", json_encode(\$data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));\n\
-  " 2>/dev/null || true\n\
-fi\n\
-# Try to discover packages, if it fails create empty packages.php\n\
+# Always create empty packages.php first to prevent PackageManifest errors\n\
+echo "<?php return [];" > bootstrap/cache/packages.php\n\
+# Try to patch PackageManifest if patch script exists\n\
+php patch-package-manifest.php 2>/dev/null || true\n\
+# Try to discover packages, but always fallback to empty array\n\
 php artisan package:discover --ansi 2>/dev/null || echo "<?php return [];" > bootstrap/cache/packages.php\n\
 if [ -n "$PORT" ]; then\n\
   sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf\n\
