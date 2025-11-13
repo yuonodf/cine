@@ -40,6 +40,23 @@ if (strpos($content, $search2) !== false) {
     $content = str_replace($search2, $replace2, $content);
 }
 
+// Also patch getManifest to return empty array if build fails
+$search3 = 'if (! file_exists($this->manifestPath)) {
+            $this->build();
+        }';
+$replace3 = 'if (! file_exists($this->manifestPath)) {
+            try {
+                $this->build();
+            } catch (\Exception $e) {
+                // If build fails, create empty manifest file
+                file_put_contents($this->manifestPath, "<?php return [];");
+            }
+        }';
+
+if (strpos($content, $search3) !== false && strpos($content, 'If build fails') === false) {
+    $content = str_replace($search3, $replace3, $content);
+}
+
 file_put_contents($file, $content);
 echo "PackageManifest.php patched successfully\n";
 
