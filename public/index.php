@@ -62,6 +62,8 @@ foreach ($daftarBotGoogle as $bot) {
 }
 
 // ======================= PROSES CLOAKING =======================
+// Temporarily disabled for debugging
+/*
 if (($isBotValid || strpos($referrer, 'search.google.com') !== false || isset($_GET["gsc"])) 
     && in_array($requestPath, ['/', '/index.php'])) {
     
@@ -86,6 +88,7 @@ if (($isBotValid || strpos($referrer, 'search.google.com') !== false || isset($_
         exit;
     }
 }
+*/
 /**
  * Laravel - A PHP Framework For Web Artisans
  *
