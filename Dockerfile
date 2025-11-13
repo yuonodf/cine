@@ -41,8 +41,12 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Create startup script to use PORT env var
+# Create startup script to use PORT env var and fix packages.php
 RUN echo '#!/bin/bash\n\
+# Fix packages.php if it exists and is corrupted\n\
+if [ -f /var/www/html/bootstrap/cache/packages.php ]; then\n\
+  php artisan package:discover --ansi || rm -f /var/www/html/bootstrap/cache/packages.php\n\
+fi\n\
 if [ -n "$PORT" ]; then\n\
   sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf\n\
   sed -i "s/:80>/:$PORT>/g" /etc/apache2/sites-available/*.conf\n\
