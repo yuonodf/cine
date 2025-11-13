@@ -24,13 +24,14 @@ COPY . .
 # Install dependencies (skip scripts to avoid artisan errors)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-# Run Laravel package discovery after installation
-RUN php artisan package:discover --ansi || true
-
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
+# Create bootstrap/cache directory and set permissions
+RUN mkdir -p /var/www/html/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
+
+# Run Laravel package discovery after installation
+RUN php artisan package:discover --ansi || true
 
 # Configure Apache
 RUN a2enmod rewrite
