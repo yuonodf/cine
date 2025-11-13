@@ -29,7 +29,8 @@ RUN php artisan package:discover --ansi || true
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache
 
 # Configure Apache
 RUN a2enmod rewrite
