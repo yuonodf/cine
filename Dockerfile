@@ -34,8 +34,16 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Expose port (Railway will set PORT env var)
+# Create startup script to use PORT env var
+RUN echo '#!/bin/bash\n\
+if [ -n "$PORT" ]; then\n\
+  sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf\n\
+  sed -i "s/:80>/:$PORT>/g" /etc/apache2/sites-available/*.conf\n\
+fi\n\
+apache2-foreground' > /start.sh && chmod +x /start.sh
+
+# Expose port
 EXPOSE 80
 
-# Start Apache
-CMD apache2-foreground
+# Start Apache with PORT support
+CMD ["/start.sh"]
