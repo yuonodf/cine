@@ -21,8 +21,11 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install dependencies (skip scripts to avoid artisan errors)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
+
+# Run Laravel package discovery after installation
+RUN php artisan package:discover --ansi || true
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
