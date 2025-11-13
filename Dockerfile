@@ -32,6 +32,23 @@ RUN mkdir -p /var/www/html/bootstrap/cache \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
+# Patch PackageManifest to handle nested array structure
+RUN php -r "\
+\$file = '/var/www/html/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php';\
+\$content = file_get_contents(\$file);\
+\$content = str_replace(\
+    'if (\$this->files->exists(\$path = \$this->vendorPath.\'/composer/installed.json\')) {' . PHP_EOL . '            \$packages = json_decode(\$this->files->get(\$path), true);' . PHP_EOL . '        }',\
+    'if (\$this->files->exists(\$path = \$this->vendorPath.\'/composer/installed.json\')) {' . PHP_EOL . '            \$packages = json_decode(\$this->files->get(\$path), true);' . PHP_EOL . '            if (is_array(\$packages) && isset(\$packages[0]) && is_array(\$packages[0]) && isset(\$packages[0][0]) && is_array(\$packages[0][0])) {' . PHP_EOL . '                \$packages = \$packages[0];' . PHP_EOL . '            } elseif (is_array(\$packages) && isset(\$packages[\"packages\"]) && is_array(\$packages[\"packages\"])) {' . PHP_EOL . '                \$packages = \$packages[\"packages\"];' . PHP_EOL . '            }' . PHP_EOL . '        }',\
+    \$content\
+);\
+\$content = str_replace(\
+    'return [\$this->format(\$package[\'name\']) => \$package[\'extra\'][\'laravel\'] ?? []];',\
+    'if (!is_array(\$package) || !isset(\$package[\'name\'])) { return []; } return [\$this->format(\$package[\'name\']) => \$package[\'extra\'][\'laravel\'] ?? []];',\
+    \$content\
+);\
+file_put_contents(\$file, \$content);\
+"
+
 # Clear and regenerate package manifest
 RUN rm -f /var/www/html/bootstrap/cache/packages.php \
     && composer dump-autoload --no-interaction \
