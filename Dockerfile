@@ -33,6 +33,7 @@ RUN mkdir -p /var/www/html/bootstrap/cache \
 # Clear and regenerate package manifest
 RUN rm -f /var/www/html/bootstrap/cache/packages.php \
     && composer dump-autoload --no-interaction \
+    && php artisan clear-compiled || true \
     && php artisan package:discover --ansi || true
 
 # Configure Apache
@@ -44,8 +45,18 @@ RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 # Create startup script to use PORT env var and fix packages.php
 RUN echo '#!/bin/bash\n\
 # Always regenerate packages.php on startup to avoid corruption issues\n\
-rm -f /var/www/html/bootstrap/cache/packages.php\n\
-cd /var/www/html && php artisan package:discover --ansi 2>/dev/null || true\n\
+cd /var/www/html\n\
+rm -f bootstrap/cache/packages.php\n\
+# Ensure installed.json exists and is valid\n\
+if [ -f vendor/composer/installed.json ]; then\n\
+  # Try to fix if installed.json has wrong structure\n\
+  INSTALLED_JSON=$(cat vendor/composer/installed.json)\n\
+  if echo "$INSTALLED_JSON" | grep -q "^\[\["; then\n\
+    # If it starts with [[, it might be double-encoded, try to fix\n\
+    echo "$INSTALLED_JSON" | php -r "echo json_encode(json_decode(file_get_contents(\"php://stdin\"), true));" > vendor/composer/installed.json.tmp && mv vendor/composer/installed.json.tmp vendor/composer/installed.json || true\n\
+  fi\n\
+fi\n\
+php artisan package:discover --ansi 2>/dev/null || true\n\
 if [ -n "$PORT" ]; then\n\
   sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf\n\
   sed -i "s/:80>/:$PORT>/g" /etc/apache2/sites-available/*.conf\n\
