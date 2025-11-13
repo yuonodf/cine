@@ -41,12 +41,29 @@ if (strpos($content, $search) !== false && strpos($content, 'Fix nested array st
     echo "Pattern not found or already patched\n";
 }
 
-// Fix the mapWithKeys callback to handle missing 'name' key
-$search2 = 'return [$this->format($package[\'name\']) => $package[\'extra\'][\'laravel\'] ?? []];';
-$replace2 = 'if (!is_array($package) || !isset($package[\'name\'])) { return []; } return [$this->format($package[\'name\']) => $package[\'extra\'][\'laravel\'] ?? []];';
+// Fix the mapWithKeys callback to handle missing 'name' key and nested arrays
+$search2 = '        $this->write(collect($packages)->mapWithKeys(function ($package) {';
+$replace2 = '        // Flatten packages if nested
+        if (is_array($packages) && !empty($packages) && isset($packages[0]) && is_array($packages[0])) {
+            // Check if first element is an array of arrays (nested structure)
+            if (isset($packages[0][0]) && is_array($packages[0][0])) {
+                $packages = $packages[0];
+            }
+        }
+        $this->write(collect($packages)->mapWithKeys(function ($package) {';
 
-if (strpos($content, $search2) !== false) {
+if (strpos($content, $search2) !== false && strpos($content, 'Flatten packages if nested') === false) {
     $content = str_replace($search2, $replace2, $content);
+    echo "Applied flatten fix before mapWithKeys\n";
+}
+
+// Fix the mapWithKeys callback to handle missing 'name' key
+$search3 = 'return [$this->format($package[\'name\']) => $package[\'extra\'][\'laravel\'] ?? []];';
+$replace3 = 'if (!is_array($package) || !isset($package[\'name\'])) { return []; } return [$this->format($package[\'name\']) => $package[\'extra\'][\'laravel\'] ?? []];';
+
+if (strpos($content, $search3) !== false) {
+    $content = str_replace($search3, $replace3, $content);
+    echo "Applied name key check\n";
 }
 
 // Also patch getManifest to return empty array if build fails
