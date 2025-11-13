@@ -4,7 +4,7 @@
 
 ### 1. MySQL 추가
 1. https://railway.app 접속
-2. `cinecarlaravel` 프로젝트 선택
+2. `adorable-amazement` 프로젝트 선택
 3. "New" 버튼 클릭
 4. "Database" → "Add MySQL" 선택
 5. MySQL 서비스 생성 대기 (약 1-2분)
@@ -27,7 +27,7 @@
 터미널에서:
 ```bash
 cd /Users/lomyun/Desktop/cine
-railway link  # 프로젝트 선택: cinecarlaravel
+railway link  # 프로젝트 선택: adorable-amazement
 railway connect mysql < database/import.sql
 ```
 
@@ -39,7 +39,7 @@ cd /Users/lomyun/Desktop/cine
 railway link
 # 프롬프트에서:
 # - Workspace: yuonodf's Projects
-# - Project: cinecarlaravel
+# - Project: adorable-amazement
 ```
 
 ### 2. MySQL 추가
